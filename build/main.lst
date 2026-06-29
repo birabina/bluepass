@@ -1,0 +1,309 @@
+ARM GAS  /tmp/ccEOsXSZ.s 			page 1
+
+
+   1              		.cpu cortex-m3
+   2              		.arch armv7-m
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 2
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"main.c"
+  14              		.text
+  15              		.section	.text.SysTick_Handler,"ax",%progbits
+  16              		.align	1
+  17              		.p2align 2,,3
+  18              		.global	SysTick_Handler
+  19              		.syntax unified
+  20              		.thumb
+  21              		.thumb_func
+  23              	SysTick_Handler:
+  24              		@ args = 0, pretend = 0, frame = 0
+  25              		@ frame_needed = 0, uses_anonymous_args = 0
+  26              		@ link register save eliminated.
+  27 0000 024A     		ldr	r2, .L3
+  28 0002 1368     		ldr	r3, [r2]
+  29 0004 0133     		adds	r3, r3, #1
+  30 0006 1360     		str	r3, [r2]
+  31 0008 7047     		bx	lr
+  32              	.L4:
+  33 000a 00BF     		.align	2
+  34              	.L3:
+  35 000c 00000000 		.word	SysTick_tick
+  37              		.section	.text.delay_ms,"ax",%progbits
+  38              		.align	1
+  39              		.p2align 2,,3
+  40              		.global	delay_ms
+  41              		.syntax unified
+  42              		.thumb
+  43              		.thumb_func
+  45              	delay_ms:
+  46              		@ args = 0, pretend = 0, frame = 0
+  47              		@ frame_needed = 0, uses_anonymous_args = 0
+  48              		@ link register save eliminated.
+  49 0000 054A     		ldr	r2, .L9
+  50 0002 1168     		ldr	r1, [r2]
+  51 0004 1368     		ldr	r3, [r2]
+  52 0006 5B1A     		subs	r3, r3, r1
+  53 0008 9842     		cmp	r0, r3
+  54 000a 04D9     		bls	.L5
+  55              	.L7:
+  56              		.syntax unified
+  57              	@ 30 "main.c" 1
+  58 000c 00BF     		nop
+  59              	@ 0 "" 2
+  60              		.thumb
+ARM GAS  /tmp/ccEOsXSZ.s 			page 2
+
+
+  61              		.syntax unified
+  62 000e 1368     		ldr	r3, [r2]
+  63 0010 5B1A     		subs	r3, r3, r1
+  64 0012 8342     		cmp	r3, r0
+  65 0014 FAD3     		bcc	.L7
+  66              	.L5:
+  67 0016 7047     		bx	lr
+  68              	.L10:
+  69              		.align	2
+  70              	.L9:
+  71 0018 00000000 		.word	SysTick_tick
+  73              		.section	.text.startup.main,"ax",%progbits
+  74              		.align	1
+  75              		.p2align 2,,3
+  76              		.global	main
+  77              		.syntax unified
+  78              		.thumb
+  79              		.thumb_func
+  81              	main:
+  82              		@ args = 0, pretend = 0, frame = 16
+  83              		@ frame_needed = 0, uses_anonymous_args = 0
+  84 0000 4D4A     		ldr	r2, .L38
+  85 0002 F0B5     		push	{r4, r5, r6, r7, lr}
+  86 0004 1368     		ldr	r3, [r2]
+  87 0006 85B0     		sub	sp, sp, #20
+  88 0008 43F48033 		orr	r3, r3, #65536
+  89 000c 1360     		str	r3, [r2]
+  90 000e 1368     		ldr	r3, [r2]
+  91 0010 9C03     		lsls	r4, r3, #14
+  92 0012 03D4     		bmi	.L12
+  93              	.L13:
+  94              		.syntax unified
+  95              	@ 39 "main.c" 1
+  96 0014 00BF     		nop
+  97              	@ 0 "" 2
+  98              		.thumb
+  99              		.syntax unified
+ 100 0016 1368     		ldr	r3, [r2]
+ 101 0018 9803     		lsls	r0, r3, #14
+ 102 001a FBD5     		bpl	.L13
+ 103              	.L12:
+ 104 001c 1421     		movs	r1, #20
+ 105 001e 474A     		ldr	r2, .L38+4
+ 106 0020 454B     		ldr	r3, .L38
+ 107 0022 1160     		str	r1, [r2]
+ 108 0024 5A68     		ldr	r2, [r3, #4]
+ 109 0026 6FF30D12 		bfc	r2, #4, #10
+ 110 002a 5A60     		str	r2, [r3, #4]
+ 111 002c 5A68     		ldr	r2, [r3, #4]
+ 112 002e 42F48062 		orr	r2, r2, #1024
+ 113 0032 5A60     		str	r2, [r3, #4]
+ 114 0034 5A68     		ldr	r2, [r3, #4]
+ 115 0036 42F48032 		orr	r2, r2, #65536
+ 116 003a 5A60     		str	r2, [r3, #4]
+ 117 003c 5A68     		ldr	r2, [r3, #4]
+ 118 003e 22F40032 		bic	r2, r2, #131072
+ 119 0042 5A60     		str	r2, [r3, #4]
+ARM GAS  /tmp/ccEOsXSZ.s 			page 3
+
+
+ 120 0044 5A68     		ldr	r2, [r3, #4]
+ 121 0046 22F47012 		bic	r2, r2, #3932160
+ 122 004a 5A60     		str	r2, [r3, #4]
+ 123 004c 5A68     		ldr	r2, [r3, #4]
+ 124 004e 42F4E012 		orr	r2, r2, #1835008
+ 125 0052 5A60     		str	r2, [r3, #4]
+ 126 0054 1A68     		ldr	r2, [r3]
+ 127 0056 42F08072 		orr	r2, r2, #16777216
+ 128 005a 1A60     		str	r2, [r3]
+ 129 005c 1A68     		ldr	r2, [r3]
+ 130 005e 9101     		lsls	r1, r2, #6
+ 131 0060 03D4     		bmi	.L14
+ 132              	.L15:
+ 133              		.syntax unified
+ 134              	@ 58 "main.c" 1
+ 135 0062 00BF     		nop
+ 136              	@ 0 "" 2
+ 137              		.thumb
+ 138              		.syntax unified
+ 139 0064 1A68     		ldr	r2, [r3]
+ 140 0066 9201     		lsls	r2, r2, #6
+ 141 0068 FBD5     		bpl	.L15
+ 142              	.L14:
+ 143 006a 334A     		ldr	r2, .L38
+ 144 006c 5368     		ldr	r3, [r2, #4]
+ 145 006e 23F00303 		bic	r3, r3, #3
+ 146 0072 5360     		str	r3, [r2, #4]
+ 147 0074 5368     		ldr	r3, [r2, #4]
+ 148 0076 43F00203 		orr	r3, r3, #2
+ 149 007a 5360     		str	r3, [r2, #4]
+ 150 007c 5368     		ldr	r3, [r2, #4]
+ 151 007e 03F00C03 		and	r3, r3, #12
+ 152 0082 082B     		cmp	r3, #8
+ 153 0084 05D0     		beq	.L16
+ 154              	.L17:
+ 155              		.syntax unified
+ 156              	@ 66 "main.c" 1
+ 157 0086 00BF     		nop
+ 158              	@ 0 "" 2
+ 159              		.thumb
+ 160              		.syntax unified
+ 161 0088 5368     		ldr	r3, [r2, #4]
+ 162 008a 03F00C03 		and	r3, r3, #12
+ 163 008e 082B     		cmp	r3, #8
+ 164 0090 F9D1     		bne	.L17
+ 165              	.L16:
+ 166 0092 294A     		ldr	r2, .L38
+ 167 0094 9369     		ldr	r3, [r2, #24]
+ 168 0096 43F48053 		orr	r3, r3, #4096
+ 169 009a 43F00D03 		orr	r3, r3, #13
+ 170 009e 9361     		str	r3, [r2, #24]
+ 171              		.syntax unified
+ 172              	@ 77 "main.c" 1
+ 173 00a0 00BF     		nop
+ 174              	@ 0 "" 2
+ 175              	@ 78 "main.c" 1
+ 176 00a2 00BF     		nop
+ARM GAS  /tmp/ccEOsXSZ.s 			page 4
+
+
+ 177              	@ 0 "" 2
+ 178              		.thumb
+ 179              		.syntax unified
+ 180 00a4 4FF0E023 		mov	r3, #-536813568
+ 181 00a8 0722     		movs	r2, #7
+ 182 00aa 0021     		movs	r1, #0
+ 183 00ac 2448     		ldr	r0, .L38+8
+ 184 00ae 254C     		ldr	r4, .L38+12
+ 185 00b0 5861     		str	r0, [r3, #20]
+ 186 00b2 9961     		str	r1, [r3, #24]
+ 187 00b4 1A61     		str	r2, [r3, #16]
+ 188 00b6 FFF7FEFF 		bl	RGB_Init
+ 189 00ba FFF7FEFF 		bl	MFRC522_Init
+ 190 00be 2268     		ldr	r2, [r4]
+ 191 00c0 2368     		ldr	r3, [r4]
+ 192 00c2 9B1A     		subs	r3, r3, r2
+ 193 00c4 632B     		cmp	r3, #99
+ 194 00c6 04D8     		bhi	.L18
+ 195              	.L19:
+ 196              		.syntax unified
+ 197              	@ 30 "main.c" 1
+ 198 00c8 00BF     		nop
+ 199              	@ 0 "" 2
+ 200              		.thumb
+ 201              		.syntax unified
+ 202 00ca 2368     		ldr	r3, [r4]
+ 203 00cc 9B1A     		subs	r3, r3, r2
+ 204 00ce 632B     		cmp	r3, #99
+ 205 00d0 FAD9     		bls	.L19
+ 206              	.L18:
+ 207 00d2 1D4E     		ldr	r6, .L38+16
+ 208 00d4 1D4D     		ldr	r5, .L38+20
+ 209              	.L20:
+ 210 00d6 4FF4FA70 		mov	r0, #500
+ 211 00da FFF7FEFF 		bl	RGB_BlinkBlue
+ 212 00de 2620     		movs	r0, #38
+ 213 00e0 01A9     		add	r1, sp, #4
+ 214 00e2 FFF7FEFF 		bl	MFRC522_Request
+ 215 00e6 0028     		cmp	r0, #0
+ 216 00e8 F5D1     		bne	.L20
+ 217 00ea 02A8     		add	r0, sp, #8
+ 218 00ec FFF7FEFF 		bl	MFRC522_Anticoll
+ 219 00f0 0028     		cmp	r0, #0
+ 220 00f2 F0D1     		bne	.L20
+ 221 00f4 3146     		mov	r1, r6
+ 222 00f6 02A8     		add	r0, sp, #8
+ 223 00f8 FFF7FEFF 		bl	MFRC522_CompareUID
+ 224 00fc 0722     		movs	r2, #7
+ 225 00fe 70B9     		cbnz	r0, .L22
+ 226 0100 0223     		movs	r3, #2
+ 227 0102 2768     		ldr	r7, [r4]
+ 228 0104 2A61     		str	r2, [r5, #16]
+ 229 0106 6B61     		str	r3, [r5, #20]
+ 230 0108 FFF7FEFF 		bl	MFRC522_Halt
+ 231 010c 40F6B732 		movw	r2, #2999
+ 232              	.L23:
+ 233 0110 2368     		ldr	r3, [r4]
+ARM GAS  /tmp/ccEOsXSZ.s 			page 5
+
+
+ 234 0112 DB1B     		subs	r3, r3, r7
+ 235 0114 9342     		cmp	r3, r2
+ 236 0116 FBD9     		bls	.L23
+ 237              	.L37:
+ 238 0118 0723     		movs	r3, #7
+ 239 011a 2B61     		str	r3, [r5, #16]
+ 240 011c DBE7     		b	.L20
+ 241              	.L22:
+ 242 011e 0123     		movs	r3, #1
+ 243 0120 2768     		ldr	r7, [r4]
+ 244 0122 2A61     		str	r2, [r5, #16]
+ 245 0124 6B61     		str	r3, [r5, #20]
+ 246 0126 FFF7FEFF 		bl	MFRC522_Halt
+ 247 012a 40F6B732 		movw	r2, #2999
+ 248              	.L24:
+ 249 012e 2368     		ldr	r3, [r4]
+ 250 0130 DB1B     		subs	r3, r3, r7
+ 251 0132 9342     		cmp	r3, r2
+ 252 0134 FBD9     		bls	.L24
+ 253 0136 EFE7     		b	.L37
+ 254              	.L39:
+ 255              		.align	2
+ 256              	.L38:
+ 257 0138 00100240 		.word	1073876992
+ 258 013c 00200240 		.word	1073881088
+ 259 0140 3F190100 		.word	71999
+ 260 0144 00000000 		.word	SysTick_tick
+ 261 0148 00000000 		.word	MASTER_UID
+ 262 014c 00080140 		.word	1073809408
+ 264              		.global	SysTick_tick
+ 265              		.section	.bss.SysTick_tick,"aw",%nobits
+ 266              		.align	2
+ 269              	SysTick_tick:
+ 270 0000 00000000 		.space	4
+ 271              		.section	.rodata.MASTER_UID,"a"
+ 272              		.align	2
+ 275              	MASTER_UID:
+ 276 0000 12345678 		.ascii	"\0224Vx"
+ 277              		.ident	"GCC: (15:13.2.rel1-2) 13.2.1 20231009"
+ARM GAS  /tmp/ccEOsXSZ.s 			page 6
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 main.c
+     /tmp/ccEOsXSZ.s:16     .text.SysTick_Handler:00000000 $t
+     /tmp/ccEOsXSZ.s:23     .text.SysTick_Handler:00000000 SysTick_Handler
+     /tmp/ccEOsXSZ.s:35     .text.SysTick_Handler:0000000c $d
+     /tmp/ccEOsXSZ.s:269    .bss.SysTick_tick:00000000 SysTick_tick
+     /tmp/ccEOsXSZ.s:38     .text.delay_ms:00000000 $t
+     /tmp/ccEOsXSZ.s:45     .text.delay_ms:00000000 delay_ms
+     /tmp/ccEOsXSZ.s:71     .text.delay_ms:00000018 $d
+     /tmp/ccEOsXSZ.s:74     .text.startup.main:00000000 $t
+     /tmp/ccEOsXSZ.s:81     .text.startup.main:00000000 main
+     /tmp/ccEOsXSZ.s:257    .text.startup.main:00000138 $d
+     /tmp/ccEOsXSZ.s:275    .rodata.MASTER_UID:00000000 MASTER_UID
+     /tmp/ccEOsXSZ.s:266    .bss.SysTick_tick:00000000 $d
+     /tmp/ccEOsXSZ.s:272    .rodata.MASTER_UID:00000000 $d
+
+UNDEFINED SYMBOLS
+RGB_Init
+MFRC522_Init
+RGB_BlinkBlue
+MFRC522_Request
+MFRC522_Anticoll
+MFRC522_CompareUID
+MFRC522_Halt
