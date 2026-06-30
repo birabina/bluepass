@@ -59,6 +59,10 @@ inline void LogRaw(AppState& st, ImU32 color, const std::string& msg)
     st.logLines.push_back({color, msg});
 }
 
+bool SerialOpen(const std::string& port, int baud);
+void SerialClose();
+bool SerialConnected();
+
 inline std::string NowString()
 {
     auto now  = std::chrono::system_clock::now();

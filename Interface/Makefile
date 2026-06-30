@@ -44,6 +44,14 @@ CXXFLAGS_COMMON := \
     -Wno-unused-parameter \
     -Wno-missing-field-initializers
 
+# Se SERIAL=1: usa porta serial real em vez do simulador
+ifeq ($(SERIAL),1)
+    CXXFLAGS_COMMON += -DUSE_SERIAL_BACKEND
+    $(info >>> Modo SERIAL REAL (/dev/ttyUSB0))
+else
+    $(info >>> Modo SIMULADOR (sem hardware))
+endif
+
 CXXFLAGS_RELEASE := $(CXXFLAGS_COMMON) -O2 -DNDEBUG
 CXXFLAGS_DEBUG   := $(CXXFLAGS_COMMON) -Og -g3 -fsanitize=address,undefined
 

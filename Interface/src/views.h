@@ -1,4 +1,12 @@
 #pragma once
+/**
+ * @file  views.h
+ * @brief Implementação das três telas principais da GUI RFID.
+ *
+ * Cada função Draw*View() renderiza uma tela completa dentro da área de
+ * conteúdo principal. Elas recebem o AppState (com lock externo) e o
+ * snapshot de valores para evitar lock longo durante o render.
+ */
 
 #include "imgui.h"
 #include "backend.h"
@@ -9,17 +17,20 @@
 #include <string>
 #include <vector>
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Snapshot dos dados voláteis — copiado do AppState com lock breve
+// ─────────────────────────────────────────────────────────────────────────────
 struct FrameSnapshot
 {
     ConnectionStatus connStatus;
-    AccessResult      lastResult;
+    AccessResult     lastResult;
     std::string      lastUID;
-    double            resultTimer;
+    double           resultTimer;
     int              totalGranted, totalDenied, totalReads;
     float            readRate[128];
     int              readRateHead;
     uint8_t          masterUID[4];
-    double            uptimeSeconds;
+    double           uptimeSeconds;
     std::vector<AccessRecord> history;
     std::vector<std::pair<ImU32,std::string>> logLines;
 };
@@ -45,13 +56,18 @@ inline FrameSnapshot SnapshotState(AppState& st)
     return s;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// VIEW 1 — MONITORAMENTO
+// ─────────────────────────────────────────────────────────────────────────────
 inline void DrawMonitorView(const FrameSnapshot& snap)
 {
     float totalW = ImGui::GetContentRegionAvail().x;
 
+    // ── Linha superior: radar + painel de status ──────────────────────────────
     float radarSize = 200.0f;
     float rightW    = totalW - radarSize - 16.0f;
 
+    // Radar
     ImGui::BeginChild("##radar_panel", {radarSize, radarSize}, false,
                       ImGuiWindowFlags_NoScrollbar);
     {
@@ -64,6 +80,7 @@ inline void DrawMonitorView(const FrameSnapshot& snap)
 
         DrawRadarSweep(ImGui::GetWindowDrawList(), c, rad, connected, tagVisible);
 
+        // Rótulo de status no topo do radar
         const char* statusLabel = connected ? "CAMPO RF ATIVO" : "SEM SINAL";
         ImU32 labelCol = connected ? U32_CYAN : U32_RED;
         ImVec2 lsz = ImGui::CalcTextSize(statusLabel);
@@ -76,11 +93,13 @@ inline void DrawMonitorView(const FrameSnapshot& snap)
 
     ImGui::SameLine(0, 16.0f);
 
+    // Painel de status direito
     ImGui::BeginChild("##status_panel", {rightW, radarSize}, false,
                       ImGuiWindowFlags_NoScrollbar);
     {
         SectionHeader("STATUS DO SISTEMA", rightW);
 
+        // Conexão
         bool isConn = snap.connStatus == ConnectionStatus::Connected;
         const char* connStr =
             snap.connStatus == ConnectionStatus::Connected  ? "Conectado"  :
@@ -94,21 +113,25 @@ inline void DrawMonitorView(const FrameSnapshot& snap)
 
         ImGui::Spacing();
 
+        // RC522
         StatusRow("Módulo RC522", isConn ? "Operacional" : "Offline",
                   isConn ? U32_GREEN : U32_RED_DIM,
                   isConn ? U32_GREEN_DIM : U32_RED_DIM, false);
         ImGui::Spacing();
 
+        // Antenas
         StatusRow("Antenas TX1/TX2", isConn ? "Ativas (3.3V)" : "—",
                   isConn ? U32_CYAN : U32_TEXT_DIM,
                   isConn ? U32_CYAN_DIM : U32_BG_WIDGET, false);
         ImGui::Spacing();
 
+        // SPI
         StatusRow("SPI1 Clock", isConn ? "9 MHz" : "—",
                   isConn ? U32_CYAN : U32_TEXT_DIM,
                   isConn ? U32_CYAN_DIM : U32_BG_WIDGET, false);
         ImGui::Spacing();
 
+        // Uptime
         int   mins = static_cast<int>(snap.uptimeSeconds) / 60;
         int   secs = static_cast<int>(snap.uptimeSeconds) % 60;
         char  upbuf[24];
@@ -119,6 +142,7 @@ inline void DrawMonitorView(const FrameSnapshot& snap)
 
     ImGui::Spacing();
 
+    // ── Stat cards ────────────────────────────────────────────────────────────
     float cardW = (totalW - 32.0f) / 3.0f;
     char vbuf[32];
 
@@ -138,6 +162,7 @@ inline void DrawMonitorView(const FrameSnapshot& snap)
 
     ImGui::Spacing();
 
+    // ── Banner de resultado de acesso ─────────────────────────────────────────
     BannerState bs = snap.lastResult == AccessResult::Granted ? BannerState::Granted :
                      snap.lastResult == AccessResult::Denied  ? BannerState::Denied :
                      BannerState::Idle;
@@ -145,20 +170,25 @@ inline void DrawMonitorView(const FrameSnapshot& snap)
 
     ImGui::Spacing();
 
+    // ── Mini gráfico de taxa de leitura ───────────────────────────────────────
     SectionHeader("TAXA DE LEITURA (tags/s)", totalW);
     MiniPlot("tags/s", snap.readRate, 64, snap.readRateHead,
              0.0f, 2.0f, {totalW, 60.0f}, U32_CYAN);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// VIEW 2 — CONFIGURAÇÕES
+// ─────────────────────────────────────────────────────────────────────────────
 inline void DrawConfigView(AppState& st)
 {
     float totalW = ImGui::GetContentRegionAvail().x;
 
+    // ── Seção: Conexão Serial ─────────────────────────────────────────────────
     SectionHeader("CONEXÃO SERIAL", totalW);
 
     static char portBuf[64] = "/dev/ttyUSB0";
     static const int baudOptions[] = {9600,19200,38400,57600,115200,230400,921600};
-    static int   baudIdx = 4;
+    static int  baudIdx = 4; // 115200
 
     ImGui::PushStyleColor(ImGuiCol_Text, COL_TEXT_MID);
     ImGui::TextUnformatted("Porta Serial");
@@ -204,6 +234,7 @@ inline void DrawConfigView(AppState& st)
         std::lock_guard<std::mutex> lk(st.mtx);
         st.serialPort = portBuf;
         st.baudRate   = baudOptions[baudIdx];
+        // Em produção: sinalizar thread para conectar/desconectar
         LogRaw(st, U32_AMBER,
                std::string("[ CFG ] Solicitação de ") +
                (connected ? "desconexão" : "conexão") +
@@ -215,10 +246,12 @@ inline void DrawConfigView(AppState& st)
     ImGui::Separator();
     ImGui::Spacing();
 
+    // ── Seção: UID Mestre ─────────────────────────────────────────────────────
     SectionHeader("UID MESTRE (controle de acesso)", totalW);
 
     static int uidBytes[4] = {0x12, 0x34, 0x56, 0x78};
 
+    // Sincroniza uma vez
     {
         static bool initialized = false;
         if (!initialized)
@@ -252,6 +285,7 @@ inline void DrawConfigView(AppState& st)
         if (i < 3) ImGui::SameLine(0, 6.0f);
     }
 
+    // Preview formatado
     ImGui::Spacing();
     char preview[20];
     snprintf(preview, sizeof(preview), "%02X:%02X:%02X:%02X",
@@ -282,6 +316,7 @@ inline void DrawConfigView(AppState& st)
     ImGui::Separator();
     ImGui::Spacing();
 
+    // ── Seção: Parâmetros RC522 ───────────────────────────────────────────────
     SectionHeader("PARÂMETROS RC522 (informativo)", totalW);
 
     struct Param { const char* name; const char* value; const char* desc; };
@@ -324,12 +359,16 @@ inline void DrawConfigView(AppState& st)
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// VIEW 3 — HISTÓRICO
+// ─────────────────────────────────────────────────────────────────────────────
 inline void DrawHistoryView(const FrameSnapshot& snap)
 {
     float totalW = ImGui::GetContentRegionAvail().x;
 
     SectionHeader("HISTÓRICO DE ACESSOS", totalW);
 
+    // Filtros
     static bool showGranted = true;
     static bool showDenied  = true;
     static char filterUID[16] = "";
@@ -357,6 +396,7 @@ inline void DrawHistoryView(const FrameSnapshot& snap)
 
     ImGui::Spacing();
 
+    // Resumo de porcentagem
     float pctGranted = snap.totalReads > 0
         ? 100.0f * snap.totalGranted / snap.totalReads : 0.0f;
 
@@ -372,6 +412,7 @@ inline void DrawHistoryView(const FrameSnapshot& snap)
 
     ImGui::Spacing();
 
+    // Tabela de histórico
     if (ImGui::BeginTable("##history", 4,
                           ImGuiTableFlags_BordersOuter |
                           ImGuiTableFlags_BordersInner |
