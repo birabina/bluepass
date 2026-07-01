@@ -2,14 +2,6 @@
 /**
  * @file  lockscreen.h
  * @brief Tela de autenticação RFID — exibida antes do dashboard.
- *
- * Estados internos da máquina de lock:
- *
- *   LOCKED ──(tag correta)──► UNLOCKING ──(animação fim)──► UNLOCKED
- *     ▲                                                          │
- *     └────────────────────(botão Bloquear)─────────────────────┘
- *     │
- *     └──(tag errada)──► DENIED ──(2s)──► LOCKED
  */
 
 #include "imgui.h"
@@ -260,7 +252,6 @@ inline bool DrawLockScreen(LockContext& ctx, const FrameSnapshot& snap,
         DrawPadlock(dl, {cx, cy}, lockSize, ctx.state, ctx.transitionT);
     }
 
-    // ── Título "RFID ACCESS CONTROL" (acima do radar) ────────────────────────
     {
         const char* title = "RFID ACCESS CONTROL";
         ImVec2 tsz = ImGui::CalcTextSize(title);
@@ -315,7 +306,6 @@ inline bool DrawLockScreen(LockContext& ctx, const FrameSnapshot& snap,
         dl->AddText({cx - msz.x * 0.5f, msgY}, mainColor, mainMsg);
     }
 
-    // ── Indicador de conexão (canto inferior direito, discreto) ──────────────
     {
         bool isConn = snap.connStatus == ConnectionStatus::Connected;
         float ix    = winW - 20.0f;
@@ -331,5 +321,5 @@ inline bool DrawLockScreen(LockContext& ctx, const FrameSnapshot& snap,
         dl->AddText({ix - ctSz.x - 14.0f, iy - 7.0f}, ctC, connTxt);
     }
 
-    return true; // ainda exibindo lock screen
+    return true; 
 }
