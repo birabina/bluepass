@@ -15,7 +15,7 @@ inline std::string FormatUID(const uint8_t uid[4])
 {
     char buf[12];
     snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X",
-             uid[0], uid[1], uid[2], uid[3]);
+            uid[0], uid[1], uid[2], uid[3]);
     return buf;
 }
 

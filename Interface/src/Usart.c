@@ -37,11 +37,10 @@ void USART1_Init(void)
      *   PA10 → bits [11:8]  (terceiro nibble do CRH)
      */
 
-    /* Limpa os bits de PA9 e PA10 no CRH (bits 4 a 11) */
     GPIOA->CRH &= ~((0xFU << 4U) | (0xFU << 8U));
 
-    GPIOA->CRH |= (0xBU << 4U)   /* PA9:  AF push-pull 50MHz (TX) */
-               |  (0x4U << 8U);  /* PA10: Input floating (RX) */
+    GPIOA->CRH |= (0xBU << 4U)  
+               |  (0x4U << 8U);  
 
     /*
      * -----------------------------------------------------------------------
@@ -76,10 +75,8 @@ void USART1_Init(void)
      */
     USART1->CR1 = USART_CR1_UE | USART_CR1_TE | USART_CR1_RE;
 
-    /* CR2: 1 stop bit (STOP = 00b, padrão — não precisa setar nada) */
     USART1->CR2 = 0U;
 
-    /* CR3: sem controle de fluxo (RTS/CTS desabilitados, padrão) */
     USART1->CR3 = 0U;
 }
 
@@ -88,13 +85,10 @@ void USART1_Init(void)
  * ========================================================================= */
 void USART1_SendChar(char c)
 {
-    /*
-     * Aguarda o registrador de dados ficar vazio (TXE = bit 7 do SR).
-     * TXE = 1 significa que o DR pode receber um novo byte para envio.
-     */
+
     while (!(USART1->SR & USART_SR_TXE))
     {
-        /* aguarda */
+    
     }
 
     USART1->DR = (uint8_t)c;
@@ -117,25 +111,19 @@ void USART1_SendString(const char *str)
  * ========================================================================= */
 void USART1_SendRFIDEvent(const uint8_t *uid, uint8_t granted)
 {
-    /*
-     * Monta a string manualmente (sem sprintf, para manter bare-metal leve
-     * e evitar dependência de printf com floating point / heap).
-     *
-     * Formato: "RFID:UID=XX:XX:XX:XX:GRANT\n" ou "...:DENY\n"
-     */
+    
     static const char hex_digits[] = "0123456789ABCDEF";
     char buf[32];
     uint8_t idx = 0U;
     uint8_t i;
 
-    /* Prefixo fixo */
+    
     const char *prefix = "RFID:UID=";
     while (*prefix != '\0')
     {
         buf[idx++] = *prefix++;
     }
 
-    /* 4 bytes do UID em hexadecimal, separados por ':' */
     for (i = 0U; i < 4U; i++)
     {
         buf[idx++] = hex_digits[(uid[i] >> 4U) & 0x0FU];
@@ -148,7 +136,7 @@ void USART1_SendRFIDEvent(const uint8_t *uid, uint8_t granted)
 
     buf[idx++] = ':';
 
-    /* Sufixo de resultado */
+    
     if (granted)
     {
         const char *suf = "GRANT";

@@ -1,7 +1,7 @@
 #pragma once
 /**
- * @file  views.h
- * @brief Implementação das três telas principais da GUI RFID.
+ * @file   views.h
+ * @brief  Implementação das três telas principais da GUI RFID com suporte a múltiplos usuários.
  *
  * Cada função Draw*View() renderiza uma tela completa dentro da área de
  * conteúdo principal. Elas recebem o AppState (com lock externo) e o
@@ -16,6 +16,17 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+#include <unordered_map> // Adicionado para suportar o dicionário de usuários
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Banco de Dados Local de Usuários Nomeados
+// ─────────────────────────────────────────────────────────────────────────────
+
+static const std::unordered_map<std::string, std::string> g_nomesUsuarios = {
+    {"95:93:E0:85", "Administrador (Mestre)"},
+    {"E0:F0:8F:E1", "≽^ kay ^≼"},
+    {"20:49:84:F6", "⊹ ࣪ ˖꒰ঌ sabrina ໒꒱.⋆˚࿔"}
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Snapshot dos dados voláteis — copiado do AppState com lock breve
@@ -23,14 +34,14 @@
 struct FrameSnapshot
 {
     ConnectionStatus connStatus;
-    AccessResult     lastResult;
-    std::string      lastUID;
-    double           resultTimer;
-    int              totalGranted, totalDenied, totalReads;
-    float            readRate[128];
-    int              readRateHead;
-    uint8_t          masterUID[4];
-    double           uptimeSeconds;
+    AccessResult      lastResult;
+    std::string       lastUID;
+    double            resultTimer;
+    int               totalGranted, totalDenied, totalReads;
+    float             readRate[128];
+    int               readRateHead;
+    uint8_t           masterUID[4];
+    double            uptimeSeconds;
     std::vector<AccessRecord> history;
     std::vector<std::pair<ImU32,std::string>> logLines;
 };
@@ -69,7 +80,7 @@ inline void DrawMonitorView(const FrameSnapshot& snap)
 
     // Radar
     ImGui::BeginChild("##radar_panel", {radarSize, radarSize}, false,
-                      ImGuiWindowFlags_NoScrollbar);
+                    ImGuiWindowFlags_NoScrollbar);
     {
         ImVec2 p   = ImGui::GetCursorScreenPos();
         ImVec2 c   = {p.x + radarSize * 0.5f, p.y + radarSize * 0.5f};
@@ -93,13 +104,13 @@ inline void DrawMonitorView(const FrameSnapshot& snap)
 
     ImGui::SameLine(0, 16.0f);
 
-    // Painel de status direito
+    
     ImGui::BeginChild("##status_panel", {rightW, radarSize}, false,
-                      ImGuiWindowFlags_NoScrollbar);
+                    ImGuiWindowFlags_NoScrollbar);
     {
         SectionHeader("STATUS DO SISTEMA", rightW);
 
-        // Conexão
+    
         bool isConn = snap.connStatus == ConnectionStatus::Connected;
         const char* connStr =
             snap.connStatus == ConnectionStatus::Connected  ? "Conectado"  :
@@ -115,20 +126,20 @@ inline void DrawMonitorView(const FrameSnapshot& snap)
 
         // RC522
         StatusRow("Módulo RC522", isConn ? "Operacional" : "Offline",
-                  isConn ? U32_GREEN : U32_RED_DIM,
-                  isConn ? U32_GREEN_DIM : U32_RED_DIM, false);
+                isConn ? U32_GREEN : U32_RED_DIM,
+                isConn ? U32_GREEN_DIM : U32_RED_DIM, false);
         ImGui::Spacing();
 
         // Antenas
         StatusRow("Antenas TX1/TX2", isConn ? "Ativas (3.3V)" : "—",
-                  isConn ? U32_CYAN : U32_TEXT_DIM,
-                  isConn ? U32_CYAN_DIM : U32_BG_WIDGET, false);
+                isConn ? U32_CYAN : U32_TEXT_DIM,
+                isConn ? U32_CYAN_DIM : U32_BG_WIDGET, false);
         ImGui::Spacing();
 
         // SPI
         StatusRow("SPI1 Clock", isConn ? "9 MHz" : "—",
-                  isConn ? U32_CYAN : U32_TEXT_DIM,
-                  isConn ? U32_CYAN_DIM : U32_BG_WIDGET, false);
+                isConn ? U32_CYAN : U32_TEXT_DIM,
+                isConn ? U32_CYAN_DIM : U32_BG_WIDGET, false);
         ImGui::Spacing();
 
         // Uptime
@@ -148,32 +159,37 @@ inline void DrawMonitorView(const FrameSnapshot& snap)
 
     snprintf(vbuf, sizeof(vbuf), "%d", snap.totalReads);
     StatCard("total",   "Total de Leituras", vbuf, "tags detectadas",
-             U32_CYAN, cardW);
+            U32_CYAN, cardW);
 
     ImGui::SameLine(0, 8.0f);
     snprintf(vbuf, sizeof(vbuf), "%d", snap.totalGranted);
     StatCard("granted", "Acessos Liberados", vbuf, "UIDs válidos",
-             U32_GREEN, cardW);
+            U32_GREEN, cardW);
 
     ImGui::SameLine(0, 8.0f);
     snprintf(vbuf, sizeof(vbuf), "%d", snap.totalDenied);
     StatCard("denied",  "Acessos Negados",  vbuf, "UIDs inválidos",
-             U32_RED, cardW);
+            U32_RED, cardW);
 
     ImGui::Spacing();
 
-    // ── Banner de resultado de acesso ─────────────────────────────────────────
     BannerState bs = snap.lastResult == AccessResult::Granted ? BannerState::Granted :
-                     snap.lastResult == AccessResult::Denied  ? BannerState::Denied :
-                     BannerState::Idle;
-    AccessBanner(bs, snap.lastUID, snap.resultTimer, totalW);
+                        snap.lastResult == AccessResult::Denied  ? BannerState::Denied :
+                        BannerState::Idle;
+        
+    
+    std::string bannerUID = snap.lastUID;
+    auto it = g_nomesUsuarios.find(bannerUID);
+    if (it != g_nomesUsuarios.end()) {
+        bannerUID += " (" + it->second + ")";
+    }
+    AccessBanner(bs, bannerUID, snap.resultTimer, totalW);
 
     ImGui::Spacing();
 
-    // ── Mini gráfico de taxa de leitura ───────────────────────────────────────
     SectionHeader("TAXA DE LEITURA (tags/s)", totalW);
     MiniPlot("tags/s", snap.readRate, 64, snap.readRateHead,
-             0.0f, 2.0f, {totalW, 60.0f}, U32_CYAN);
+            0.0f, 2.0f, {totalW, 60.0f}, U32_CYAN);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -220,7 +236,7 @@ inline void DrawConfigView(AppState& st)
     {
         std::lock_guard<std::mutex> lk(st.mtx);
         connected = (st.connStatus == ConnectionStatus::Connected ||
-                     st.connStatus == ConnectionStatus::Connecting);
+                    st.connStatus == ConnectionStatus::Connecting);
     }
 
     ImGui::PushStyleColor(ImGuiCol_Button,
@@ -234,12 +250,11 @@ inline void DrawConfigView(AppState& st)
         std::lock_guard<std::mutex> lk(st.mtx);
         st.serialPort = portBuf;
         st.baudRate   = baudOptions[baudIdx];
-        // Em produção: sinalizar thread para conectar/desconectar
         LogRaw(st, U32_AMBER,
-               std::string("[ CFG ] Solicitação de ") +
-               (connected ? "desconexão" : "conexão") +
-               " — porta: " + portBuf);
-    }
+                std::string("[ CFG ] Solicitação de ") +
+                (connected ? "desconexão" : "conexão") +
+                " — porta: " + portBuf);
+        }
     ImGui::PopStyleColor(3);
 
     ImGui::Spacing();
@@ -251,7 +266,6 @@ inline void DrawConfigView(AppState& st)
 
     static int uidBytes[4] = {0x12, 0x34, 0x56, 0x78};
 
-    // Sincroniza uma vez
     {
         static bool initialized = false;
         if (!initialized)
@@ -285,11 +299,10 @@ inline void DrawConfigView(AppState& st)
         if (i < 3) ImGui::SameLine(0, 6.0f);
     }
 
-    // Preview formatado
     ImGui::Spacing();
     char preview[20];
     snprintf(preview, sizeof(preview), "%02X:%02X:%02X:%02X",
-             uidBytes[0], uidBytes[1], uidBytes[2], uidBytes[3]);
+            uidBytes[0], uidBytes[1], uidBytes[2], uidBytes[3]);
     ImGui::PushStyleColor(ImGuiCol_Text, COL_TEXT_MID);
     ImGui::TextUnformatted("Preview");
     ImGui::PopStyleColor();
@@ -308,7 +321,7 @@ inline void DrawConfigView(AppState& st)
             st.masterUID[i] = static_cast<uint8_t>(uidBytes[i]);
         st.uidChanged = true;
         LogRaw(st, U32_AMBER,
-               std::string("[ CFG ] UID mestre atualizado: ") + preview);
+            std::string("[ CFG ] UID mestre atualizado: ") + preview);
     }
     ImGui::PopStyleColor(2);
 
@@ -331,8 +344,8 @@ inline void DrawConfigView(AppState& st)
     };
 
     if (ImGui::BeginTable("##params", 3,
-                          ImGuiTableFlags_BordersInner |
-                          ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+                        ImGuiTableFlags_BordersInner |
+                        ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
     {
         ImGui::TableSetupColumn("Parâmetro", ImGuiTableColumnFlags_WidthFixed, 140.0f);
         ImGui::TableSetupColumn("Valor",     ImGuiTableColumnFlags_WidthFixed, 110.0f);
@@ -396,7 +409,7 @@ inline void DrawHistoryView(const FrameSnapshot& snap)
 
     ImGui::Spacing();
 
-    // Resumo de porcentagem
+    
     float pctGranted = snap.totalReads > 0
         ? 100.0f * snap.totalGranted / snap.totalReads : 0.0f;
 
@@ -412,15 +425,15 @@ inline void DrawHistoryView(const FrameSnapshot& snap)
 
     ImGui::Spacing();
 
-    // Tabela de histórico
+
     if (ImGui::BeginTable("##history", 4,
-                          ImGuiTableFlags_BordersOuter |
-                          ImGuiTableFlags_BordersInner |
-                          ImGuiTableFlags_RowBg |
-                          ImGuiTableFlags_ScrollY |
-                          ImGuiTableFlags_SizingFixedFit,
-                          {0.0f, ImGui::GetContentRegionAvail().y - 8.0f}))
-    {
+                            ImGuiTableFlags_BordersOuter |
+                            ImGuiTableFlags_BordersInner |
+                            ImGuiTableFlags_RowBg |
+                            ImGuiTableFlags_ScrollY |
+                            ImGuiTableFlags_SizingFixedFit,
+                            {0.0f, ImGui::GetContentRegionAvail().y - 8.0f}))
+        {
         ImGui::TableSetupScrollFreeze(0, 1);
         ImGui::TableSetupColumn("Horário",  ImGuiTableColumnFlags_WidthFixed,   165.0f);
         ImGui::TableSetupColumn("UID",      ImGuiTableColumnFlags_WidthFixed,   115.0f);
@@ -444,16 +457,19 @@ inline void DrawHistoryView(const FrameSnapshot& snap)
 
             ImGui::TableNextRow();
 
+            // Colona 0: Horário
             ImGui::TableSetColumnIndex(0);
             ImGui::PushStyleColor(ImGuiCol_Text, COL_TEXT_DIM);
             ImGui::TextUnformatted(rec.timestamp.c_str());
             ImGui::PopStyleColor();
 
+            // Coluna 1: UID
             ImGui::TableSetColumnIndex(1);
             ImGui::PushStyleColor(ImGuiCol_Text, COL_TEXT_HI);
             ImGui::TextUnformatted(rec.uid.c_str());
             ImGui::PopStyleColor();
 
+            // Coluna 2: Resultado
             ImGui::TableSetColumnIndex(2);
             if (rec.granted)
             {
@@ -467,9 +483,22 @@ inline void DrawHistoryView(const FrameSnapshot& snap)
             }
             ImGui::PopStyleColor();
 
+            // Coluna 3: Detalhe (Modificado para ler do dicionário dinâmico)
             ImGui::TableSetColumnIndex(3);
             ImGui::PushStyleColor(ImGuiCol_Text, COL_TEXT_DIM);
-            ImGui::TextUnformatted(rec.note.c_str());
+            
+            // Busca o UID atual no mapa de nomes
+            auto usuarioIt = g_nomesUsuarios.find(rec.uid);
+            if (usuarioIt != g_nomesUsuarios.end())
+            {
+                // Se encontrou o UID no mapa, exibe o nome correspondente
+                ImGui::TextUnformatted(usuarioIt->second.c_str());
+            }
+            else
+            {
+                // Se não encontrou, mantém a string padrão enviada pelo backend
+                ImGui::TextUnformatted(rec.note.c_str());
+            }
             ImGui::PopStyleColor();
         }
 

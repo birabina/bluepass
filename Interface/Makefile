@@ -11,14 +11,13 @@
 #   make clean    → remove artefatos
 ##############################################################################
 
-# ── Configuração ────────────────────────────────────────────────────────────
 CXX      := g++
 TARGET   := rfid_gui
 BUILD    := build
 
 IMGUI_DIR := vendor/imgui
 
-# ── Fontes C++ ───────────────────────────────────────────────────────────────
+
 SOURCES := \
     src/main.cpp \
     $(IMGUI_DIR)/imgui.cpp \
@@ -30,13 +29,12 @@ SOURCES := \
 
 OBJECTS := $(patsubst %.cpp, $(BUILD)/%.o, $(SOURCES))
 
-# ── Includes ─────────────────────────────────────────────────────────────────
 INCLUDES := \
     -Isrc \
     -I$(IMGUI_DIR) \
     -I$(IMGUI_DIR)/backends
 
-# ── Flags de compilação ───────────────────────────────────────────────────────
+
 CXXFLAGS_COMMON := \
     -std=c++17 \
     $(INCLUDES) \
@@ -44,7 +42,6 @@ CXXFLAGS_COMMON := \
     -Wno-unused-parameter \
     -Wno-missing-field-initializers
 
-# Se SERIAL=1: usa porta serial real em vez do simulador
 ifeq ($(SERIAL),1)
     CXXFLAGS_COMMON += -DUSE_SERIAL_BACKEND
     $(info >>> Modo SERIAL REAL (/dev/ttyUSB0))
@@ -55,10 +52,9 @@ endif
 CXXFLAGS_RELEASE := $(CXXFLAGS_COMMON) -O2 -DNDEBUG
 CXXFLAGS_DEBUG   := $(CXXFLAGS_COMMON) -Og -g3 -fsanitize=address,undefined
 
-# Padrão: release
+
 CXXFLAGS := $(CXXFLAGS_RELEASE)
 
-# ── Flags de linkagem ─────────────────────────────────────────────────────────
 LDFLAGS := -lGL -lglfw -ldl -lpthread
 
 # ─────────────────────────────────────────────────────────────────────────────
