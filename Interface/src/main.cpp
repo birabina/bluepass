@@ -1,22 +1,6 @@
 /**
  * @file  main.cpp
  * @brief Ponto de entrada da GUI RFID — GLFW3 + OpenGL3 + Dear ImGui
- *
- * Fluxo de telas:
- *
- *   ┌─────────────────┐  tag correta   ┌──────────────────────────────────┐
- *   │   LOCK SCREEN   │───────────────►│         DASHBOARD                │
- *   │  (tela simples) │                │  Sidebar + Monitor/Config/Hist   │
- *   │  radar + ícone  │◄───────────────│  Botão "Bloquear" (canto sup.)   │
- *   └─────────────────┘  btn Bloquear  └──────────────────────────────────┘
- *         │
- *         │ tag errada
- *         ▼
- *   [shake + vermelho 2s] → volta ao lock
- *
- * Threads:
- *   main thread   → render loop ImGui (60 fps)
- *   backend thread → RFIDSimulator (leituras assíncronas + logs)
  */
 
 #include "imgui.h"
@@ -32,39 +16,26 @@
 
 #include "theme.h"
 #include "backend.h"
-#include "serial_backend.h"  // backend real (TTL-USB)
-#include "simulator.h"       // backend simulado (demo sem hardware)
+#include "serial_backend.h"  
+#include "simulator.h"       
 #include "widgets.h"
 #include "views.h"
 #include "lockscreen.h"
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Seleciona o backend em tempo de compilação:
-//   make          → simulador (padrão — sem hardware)
-//   make SERIAL=1 → porta serial real (/dev/ttyUSB0)
-// ─────────────────────────────────────────────────────────────────────────────
 #ifdef USE_SERIAL_BACKEND
     using ActiveBackend = SerialBackend;
 #else
     using ActiveBackend = RFIDSimulator;
 #endif
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Globais
-// ─────────────────────────────────────────────────────────────────────────────
 static AppState        g_state;
 static ActiveBackend*  g_sim       = nullptr;
-static int             g_activeView = 0;   // 0=Monitor 1=Config 2=Histórico
+static int             g_activeView = 0;  
 static bool            g_termAutoScroll = true;
-static LockContext     g_lock;             // máquina de estados do lock screen
+static LockContext     g_lock;           
 
-// Marca temporal do último resultado processado (para detectar leituras NOVAS,
-// não apenas resultados "diferentes" — uma mesma tag pode ser lida 2x seguidas)
 static double           g_lastProcessedTimer = -1.0;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Topbar (igual à versão anterior)
-// ─────────────────────────────────────────────────────────────────────────────
 static void DrawTopBar(const FrameSnapshot& snap, float winW)
 {
     ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -123,9 +94,6 @@ static void DrawTopBar(const FrameSnapshot& snap, float winW)
     ImGui::Dummy({winW, 0.0f});
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Sidebar
-// ─────────────────────────────────────────────────────────────────────────────
 static void DrawSidebar(const FrameSnapshot& snap, float height)
 {
     ImGui::BeginChild("##sidebar", {SIDEBAR_W, height}, false,
@@ -209,9 +177,6 @@ static void DrawSidebar(const FrameSnapshot& snap, float height)
     ImGui::EndChild();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Terminal de Logs
-// ─────────────────────────────────────────────────────────────────────────────
 static void DrawTerminal(const FrameSnapshot& snap, float width, float height)
 {
     ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -251,9 +216,6 @@ static void DrawTerminal(const FrameSnapshot& snap, float width, float height)
     ImGui::PopStyleColor();
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Status Bar
-// ─────────────────────────────────────────────────────────────────────────────
 static void DrawStatusBar(const FrameSnapshot& snap, float winW)
 {
     ImDrawList* dl = ImGui::GetWindowDrawList();
@@ -295,9 +257,6 @@ static void DrawStatusBar(const FrameSnapshot& snap, float winW)
     ImGui::Dummy({winW, STATUSBAR_H});
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN
-// ─────────────────────────────────────────────────────────────────────────────
 int main()
 {
     glfwSetErrorCallback([](int err, const char* desc)
@@ -324,7 +283,6 @@ int main()
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    // Tenta carregar fonte monospace do sistema
     const char* fontPaths[] = {
         "/usr/share/fonts/truetype/hack/Hack-Regular.ttf",
         "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
@@ -349,10 +307,8 @@ int main()
     g_sim = new ActiveBackend(g_state);
     g_sim->Start();
 
-    // Tempo do frame anterior (para animações delta-time)
     auto lastFrameTime = std::chrono::steady_clock::now();
 
-    // ── Main loop ─────────────────────────────────────────────────────────────
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
@@ -375,11 +331,6 @@ int main()
         // Snapshot thread-safe
         FrameSnapshot snap = SnapshotState(g_state);
 
-        // Detecta LEITURA NOVA (não apenas resultado "diferente"):
-        // toda vez que o backend processa uma tag, ele reseta resultTimer
-        // para ACCESS_TIMEOUT (3.0). Comparamos contra o timer anterior —
-        // se ele "pulou" para perto do máximo, é uma leitura nova,
-        // mesmo que seja a MESMA tag lida duas vezes seguidas.
         bool isFreshReading =
             snap.lastResult != AccessResult::None &&
             snap.resultTimer > g_lastProcessedTimer + 0.01; // só sobe em nova leitura
@@ -393,15 +344,12 @@ int main()
             else
                 g_lock.TriggerDenied(snap.lastUID);
         }
-        // Mantém o tracker em dia mesmo fora do estado Locked, para que o
-        // timer não "salte" artificialmente quando o usuário desbloquear
-        // manualmente e uma leitura antiga ainda estiver decaindo.
+        
         else if (snap.resultTimer < g_lastProcessedTimer)
         {
             g_lastProcessedTimer = snap.resultTimer;
         }
 
-        // Novo frame ImGui
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -420,7 +368,6 @@ int main()
                      ImGuiWindowFlags_NoBringToFrontOnFocus);
         ImGui::PopStyleVar(2);
 
-        // ── TOPBAR (sempre visível) ───────────────────────────────────────────
         ImGui::SetCursorPos({0, 0});
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {PADDING, PADDING});
         DrawTopBar(snap, winW);
@@ -436,11 +383,9 @@ int main()
             float contentH = bodyH - termH;
             float contentW = winW - SIDEBAR_W;
 
-            // Sidebar
             ImGui::SetCursorPos({0, bodyY});
             DrawSidebar(snap, bodyH);
 
-            // View ativa
             ImGui::SetCursorPos({SIDEBAR_W, bodyY});
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {PADDING, PADDING});
             ImGui::BeginChild("##content", {contentW, contentH}, false,
@@ -459,14 +404,12 @@ int main()
             DrawTerminal(snap, contentW, termH);
         }
 
-        // ── STATUS BAR (sempre visível) ───────────────────────────────────────
+        // ── STATUS BAR ──────────────────────────────────────
         ImGui::SetCursorPos({0, winH - STATUSBAR_H});
         DrawStatusBar(snap, winW);
 
-        ImGui::End(); // ##main
-
-        // ── LOCK SCREEN (overlay sobre tudo, inclusive topbar) ────────────────
-        // Renderiza usando ForegroundDrawList (sempre no topo)
+        ImGui::End(); 
+   
         if (g_lock.state != LockState::Unlocked || g_lock.fadeAlpha > 0.01f)
         {
             DrawLockScreen(g_lock, snap, winW, winH);
