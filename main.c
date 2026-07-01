@@ -33,8 +33,10 @@
 /* =========================================================================
  * UID Mestre (hardcoded) — altere conforme o cartão/chaveiro desejado
  * ========================================================================= */
-static const uint8_t MASTER_UID[4U] = { 0x12U, 0x34U, 0x56U, 0x78U };
-
+/* =========================================================================
+ * UID Mestre atualizado com a sua tag física
+ * ========================================================================= */
+static const uint8_t MASTER_UID[4U] = { 0x95U, 0x93U, 0xE0U, 0x85U };
 /* =========================================================================
  * Contador de Milissegundos (SysTick)
  * Declarado volatile pois é modificado dentro de uma ISR.
