@@ -28,7 +28,8 @@ C_SOURCES = \
     main.c \
     rc522.c \
     rgb.c \
-    usart.c
+    usart.c \
+    lora.c
 
 ASM_SOURCES = \
     startup_stm32f103c8tx.s
